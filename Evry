@@ -1,24 +1,53 @@
-
-
-
-
-
-
-# HA-Proxy-Mod-Proxy
+# HA-Proxy
+===========================================================================================================================
 https://www.digitalocean.com/community/tutorials/an-introduction-to-haproxy-and-load-balancing-concepts
 
-A few of the commonly used algorithms are as follows:
+HAProxy, which stands for High Availability Proxy, is a popular open source software TCP/HTTP Load Balancer and proxying solution used to improve the performance and reliability of a server environment by distributing the workload across multiple servers.
 
+ACL --
+ACLs are used to test some condition and perform an action & allows flexible network traffic forwarding based on a variety of factors like pattern-matching and the number of connections to a backend, for example.
+Example of an ACL:
+acl url_blog path_beg /blog
+This ACL is matched if the path of a user's request begins with /blog. This would match a request of http://yourdomain.com/blog/blog-entry-1, for example.
+
+BACKEND ---
+A backend is a set of servers that receives forwarded requests. Backends are defined in the backend section of the HAProxy configuration.
+which load balance algorithm to use, a list of servers and ports.
+Here is an example of a two backend configuration, web-backend and blog-backend with two web servers in each on port 80.
+backend web-backend
+   balance roundrobin
+   server web1 web1.yourdomain.com:80 check
+   server web2 web2.yourdomain.com:80 check
+backend blog-backend
+   balance roundrobin
+   mode http
+   server blog1 blog1.yourdomain.com:80 check
+   server blog1 blog1.yourdomain.com:80 check
+The check option at the end of the server directives specifies that health checks should be performed on those backend servers.
+
+FRONTEND --
+A frontend defines how requests should be forwarded to backends. Frontends are defined in the frontend section of the HAProxy configuration that contains -
+a set of IP addresses and a port (e.g. 10.1.1.7:80, *:443, etc.) || ACLs ||  Rules for ACL match ---
+frontend http
+  bind *:80
+  mode http
+  acl url_blog path_beg /blog
+  use_backend blog-backend if url_blog
+  default_backend web-backend
+This configures a frontend named http, which handles all incoming traffic on port 80.
+acl url_blog path_beg /blog matches a request if the path of the user's request begins with /blog.
+use_backend blog-backend if url_blog uses the ACL to proxy the traffic to blog-backend.
+default_backend web-backend specifies that all other traffic will be forwarded to web-backend.
+
+ALGORITHMS
+-----------
 roundrobin
-
 Round Robin selects servers in turns. This is the default algorithm.
 
 leastconn
-
 Selects the server with the least number of connections--it is recommended for longer sessions. Servers in the same backend are also rotated in a round-robin fashion.
 
 source
-
 This selects which server to use based on a hash of the source IP i.e. your user's IP address. This is one method to ensure that a user will connect to the same server.
 
 Sticky Sessions
@@ -26,61 +55,78 @@ Some applications require that a user continues to connect to the same backend s
 
 Health Check
 HAProxy uses health checks to determine if a backend server is available to process requests. This avoids having to manually remove a server from the backend if it becomes unavailable. The default health check is to try to establish a TCP connection to the server i.e. it checks if the backend server is listening on the configured IP address and port.
-
 If a server fails a health check, and therefore is unable to serve requests, it is automatically disabled in the backend i.e. traffic will not be forwarded to it until it becomes healthy again. If all servers in a backend fail, the service will become unavailable until at least one of those backend servers becomes healthy again.
-
 For certain types of backends, like database servers in certain situations, the default health check is insufficient to determine whether a server is still healthy.
 
+LB b/w 2 Web & 1 DB server ( TCP )
+==========================================================================================================================
+sudo vi /etc/haproxy/haproxy.cfg
 
-
-
-
-
-
-
-
-Enable logging in rsyslog 
-
-haproxy.cfg
----------------------------------------------------------------------------------------------------------------
-frontend LB
-   bind 192.168.0.125:80
-   reqadd X-Forwarded-Proto:\ http
-   default_backend LB
-
-backend LB 192.168.0.125:80
-   mode http
-   stats enable
-   stats hide-version
-   stats uri /stats
-   stats realm Haproxy\ Statistics
-   stats auth haproxy:redhat		# Credentials for HAProxy Statistic report page.
-   balance roundrobin			# Load balancing will work in round-robin process.
-   option httpchk
-   option  httpclose
-   option forwardfor
-   cookie LB insert
-   server web1-srv 192.168.0.121:80 cookie web1-srv check		# backend server.
-   server web2-srv 192.168.0.122:80 cookie web2-srv check		# backend server.
-   server web3-srv 192.168.0.123:80 cookie web3-srv check		# backend server.
-   server web4-srv 192.168.0.124:80 check backup			# backup fail-over Server, If three of the above fails this will be activated.
+frontend www
+   bind haproxy_www_public_IP:80
+   default_backend wordpress-backend
+backend wordpress-backend
+   balance roundrobin
+   mode tcp
+   server wordpress-1 wordpress_1_private_IP:80 check
+   server wordpress-2 wordpress_2_private_IP:80 check
    
-   
-   USing SSL
-   -----------------------------------------------------------------
-   
-   Open and edit the haproxy configuration and add the SSL front-end as below.
+Enabling HAProxy Logging
+sudo vi /etc/rsyslog.conf
+Then find the following two lines, and uncomment them to enable UDP syslog reception.
+$ModLoad imudp
+$UDPServerRun 514
+$UDPServerAddress 127.0.0.1
+Now restart rsyslog to enable the new configuration:
+sudo service rsyslog restart
+HAProxy logging is is now enabled! The log file will be created at /var/log/haproxy.log once HAProxy is started.
 
-# vim /etc/haproxy/haproxy.cfg 
-Add the following configuration as frontend.
+FOR HTTP Healthcheck -- 
+option httpchk GET /db/manage/server/ha/available
 
-frontend LBS
-   bind 192.168.0.125:443 ssl crt /etc/ssl/tecmint.pem
-   reqadd X-Forwarded-Proto:\ https
-   default_backend LB
-17. Next, add the redirect rule in backend configuration.
 
-redirect scheme https if !{ ssl_fc }
+MOD-PROXY
+==========================================================================================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
