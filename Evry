@@ -88,7 +88,40 @@ option httpchk GET /db/manage/server/ha/available
 MOD-PROXY
 ==========================================================================================================================
 
+reverse-proxy to welcome incoming connections and redirect them to application server(s) running on the same network. 
 
+If you have multiple back-end servers, a good way to distribute the connection when proxying them is to use Apache's load balancing features.
+
+Start editing the virtual-host settings like the previous step, but this time using the below configuration example:
+
+<Proxy balancer://mycluster>
+    # Define back-end servers:
+
+    # Server 1
+    BalancerMember http://0.0.0.0:8080/
+
+    # Server 2
+    BalancerMember http://0.0.0.0:8081/
+</Proxy>
+
+<VirtualHost *:*>
+    # Apply VH settings as desired
+    # However, configure ProxyPass argument to
+    # use "mycluster" to balance the load
+
+    ProxyPass / balancer://mycluster
+</VirtualHost>
+
+Inside your VirtualHost tag create a Location tag which matches the external path you wish to use. For this example we will use /.
+
+<Location />
+    # commands go here
+</Location>
+Inside the Location tag add the proxy options ProxyPass and ProxyPassReverse followed by the site address which will be the target of the proxy. You will also need a couple of lines to allow access.
+    ProxyPass http://mywebsite.jamescoyle.net/
+    ProxyPassReverse http://mywebsite.jamescoyle.net/
+    Order allow,deny
+    Allow from all
 
 
 
