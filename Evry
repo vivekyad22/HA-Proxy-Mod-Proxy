@@ -1,3 +1,7 @@
+
+Configuration of HA-proxy providing High Availability & load balancing for web & database servers. Using apache mod_proxy providing simple request redirection from DMZ to backend servers in a private network for further security.
+
+
 # HA-Proxy
 ===========================================================================================================================
 https://www.digitalocean.com/community/tutorials/an-introduction-to-haproxy-and-load-balancing-concepts
