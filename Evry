@@ -88,6 +88,43 @@ HAProxy logging is is now enabled! The log file will be created at /var/log/hapr
 FOR HTTP Healthcheck -- 
 option httpchk GET /db/manage/server/ha/available
 
+HA Proxy SSL
+-----------------------------------------------------------------------
+cat example.com.crt example.com.key > example.com.pem
+sudo cp example.com.pem /etc/ssl/private/
+
+stats enable
+   stats uri /stats
+   stats realm Haproxy\ Statistics
+   stats auth user:password
+   
+frontend www-https
+   bind haproxy_www_public_IP:443 ssl crt /etc/ssl/private/example.com.pem
+   reqadd X-Forwarded-Proto:\ https
+   default_backend www-backend
+   
+   backend www-backend
+   redirect scheme https if !{ ssl_fc }
+   server www-1 www_1_private_IP:80 check
+   server www-2 www_2_private_IP:80 check
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 MOD-PROXY
 ==========================================================================================================================
@@ -128,7 +165,34 @@ Inside the Location tag add the proxy options ProxyPass and ProxyPassReverse fol
     Allow from all
 
 
+SSL Configuration
+--------------------------------------------------------------
 
+Listen 443
+
+NameVirtualHost *:443
+<VirtualHost *:443>
+
+    SSLEngine On
+
+    # Set the path to SSL certificate
+    # Usage: SSLCertificateFile /path/to/cert.pem
+    SSLCertificateFile /etc/apache2/ssl/file.pem
+
+
+    # Servers to proxy the connection, or;
+    # List of application servers:
+    # Usage:
+    # ProxyPass / http://[IP Addr.]:[port]/
+    # ProxyPassReverse / http://[IP Addr.]:[port]/
+    # Example: 
+    ProxyPass / http://0.0.0.0:8080/
+    ProxyPassReverse / http://0.0.0.0:8080/
+
+    # Or, balance the load:
+    # ProxyPass / balancer://balancer_cluster_name
+
+</VirtualHost>
 
 
 
