@@ -109,17 +109,7 @@ frontend www-https
    server www-2 www_2_private_IP:80 check
 
 
-
-
-
-
-
-
-
-
-
-
-
+https://serversforhackers.com/load-balancing-with-haproxy
 
 
 
